@@ -5,9 +5,13 @@
 -module(mod_notification).
 -author("Laslo@Primo.me").
 
+-compile([{parse_transform, ejabberd_sql_pt}]).
+
+-include_lib("stdlib/include/ms_transform.hrl").
 -include("ejabberd.hrl").
 -include("logger.hrl").
 -include("jlib.hrl").
+-include("ejabberd_sql_pt.hrl").
 
 -behaviour(gen_mod).
 
@@ -183,15 +187,15 @@ user_send_packet(Pkt, C2SState, JID, Peer) ->
   From = JID#jid.luser,
   case should_send_notification(Pkt, LServer) of
     true ->
-      send_to_offline_resources(LUser, From, Pkt, LServer);
+      send_to_offline_resources(LUser, Peer, Pkt, LServer);
     false ->
       Pkt
   end.
 
-send_to_offline_resources(LUser, From, Pkt, LServer) ->
+send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
   Body = fxml:get_subtag_cdata(Pkt, <<"body">>),
   MessageFormat = get_message_format(Pkt),
-  MessageBody = get_body_text(From, MessageFormat, Body, Pkt),
+  MessageBody = get_body_text(LUser, MessageFormat, Body, Pkt),
   Message = #{"msg" => MessageBody, "from" => LUser, "type" => MessageFormat, "format" => "chat"},
   case catch ejabberd_sql:sql_query(
     LServer,
@@ -200,15 +204,16 @@ send_to_offline_resources(LUser, From, Pkt, LServer) ->
     {selected, Rows} ->
       lists:flatmap(
         fun({Resource, Token, Badges}) ->
+          Badges = Badges+1,
           Args = [{"push", Token},
             {"message", Message},
             {"username", LUser},
             {"title", "PRIMO Message"},
-            {"badge": Badges+1},
-            {"category": "IM_ACTION"},
-            {"body": Body}],
+            {"badge", Badges},
+            {"category", "IM_ACTION"},
+            {"body", Body}],
           send(Args, ejabberd_config:get_global_option(push_url, fun(V) -> V end)),
-          update_badge(LServer, Resource, Badges+1)
+          update_badge(LServer, Resource, Badges)
         end, Rows);
     _Err ->
       []
