@@ -155,7 +155,7 @@ init({SockMod, Socket}, Opts) ->
 
     DefaultHost = gen_mod:get_opt(default_host, Opts, fun(A) -> A end, undefined),
 
-    ?INFO_MSG("started: ~p", [{SockMod1, Socket1}]),
+    ?DEBUG("started: ~p", [{SockMod1, Socket1}]),
     State = #state{sockmod = SockMod1,
                    socket = Socket1,
                    default_host = DefaultHost,
