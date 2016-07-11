@@ -578,7 +578,7 @@ should_archive_peer(C2SState,
 		false ->
 		    case Default of
 			always -> true;
-			never -> false;
+			never -> true;
 			roster ->
 			    case ejabberd_c2s:get_subscription(
 				   LPeer, C2SState) of
