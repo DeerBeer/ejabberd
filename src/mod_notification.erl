@@ -89,16 +89,16 @@ send([{Key, Value} | R], PUSH_URL) ->
 
 iq(From,
     To,
-    #iq{type = get, sub_el = #xmlel{name = <<"register">>}} = IQ) ->
+    #iq{type = set, sub_el = #xmlel{name = <<"register">>}} = IQ) ->
   ?INFO_MSG("Starting to process token IQ for resource ~s", [From#jid.lresource]),
-  process_iq(From#jid.lresource, IQ).
+  process_iq(From#jid.lresource, sub_el).
 
-process_iq(Resource, #iq{sub_el = #xmlel{attrs = Attrs}} = IQ) ->
+process_iq(Resource, sub_el) ->
   LResource = jlib:resourceprep(Resource),
 
-  case fxml:get_attr_s(<<"regid">>, Attrs) of
+  case fxml:get_tag_attr_s(<<"regid">>, sub_el) of
     <<>> ->
-      case fxml:get_attr_s(<<"token">>, Attrs) of
+      case fxml:get_tag_attr_s(<<"token">>, sub_el) of
         <<>> ->
           ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", []);
         {Token} -> cache_tab:insert(tab_name, LResource, Token,
