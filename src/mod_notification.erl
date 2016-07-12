@@ -202,8 +202,8 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
             end, Rows);
         _Err ->
           []
-      end
-      _ -> ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", [])
+      end;
+      _ -> ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", [])
 end .
 
 
