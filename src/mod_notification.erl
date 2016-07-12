@@ -208,15 +208,15 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
         {selected, Rows} ->
           lists:flatmap(
             fun({Resource, Token, Badges}) ->
-              Args = [{"push", Token},
-                {"message.msg", MessageBody},
+              Args = [{"push", binary_to_list(Token)},
+                {"message.msg", binary_to_list(MessageBody)},
                 {"message.from", LUser},
-                {"message.type", MessageFormat},
-                {"message.format", "chat"},
+                {"message.type", binary_to_list(MessageFormat)},
+                {"message.format", binary_to_list("chat")},
                 {"username", LUser},
-                {"title", "PRIMO Message"},
-                {"badge", Badges},
-                {"category", "IM_ACTION"},
+                {"title", binary_to_list("PRIMO Message")},
+                {"badge", integer_to_binary(Badges)},
+                {"category", binary_to_list("IM_ACTION")},
                 {"body", Body}],
               send(Args, PushUrl),
               update_badge(LServer, Resource)
