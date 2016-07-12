@@ -171,7 +171,7 @@ user_offline(_SID, JID, _Info) ->
     end) of
     {ok, Token} ->
       TSinteger = p1_time_compat:system_time(micro_seconds),
-      insert_offline_token(JID#jid.lserver, JID#jid.luser, LResource, Token, TSinteger, 0),
+      insert_offline_token(JID#jid.lserver, JID#jid.luser, LResource, Token, TSinteger, 1),
       cache_tab:delete(resource_tokens, LResource,
         fun() -> ?INFO_MSG("Token deleted for Resource ~s", [LResource]) end);
     error -> ?INFO_MSG("No Token for Resource ~s, error: ~s", [LResource, error])
@@ -218,7 +218,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
                 {"category", "IM_ACTION"},
                 {"body", Body}],
               send(Args, PushUrl),
-              update_badge(LServer, Resource, Badges)
+              update_badge(LServer, Resource)
             end, Rows);
         _Err ->
           []
@@ -226,11 +226,11 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
   end.
 
 
-update_badge(LServer, Resource, Badges) ->
+update_badge(LServer, Resource) ->
   case catch ejabberd_sql:sql_query(
     LServer,
     ?SQL("update offline_tokens set"
-    " badges=%(Badges)d"
+    " badges=badges + 1 "
     "where resource=%(Resource)s")) of
     {updated, _} ->
       ?INFO_MSG("Sucessfully update badge for resource ~s", [Resource]);
