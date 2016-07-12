@@ -89,9 +89,18 @@ send([{Key, Value} | R], PUSH_URL) ->
 
 iq(From,
     To,
-    #iq{type = set, sub_el = #xmlel{name = <<"register">>} = SubEl} = IQ) ->
-  ?INFO_MSG("Starting to process token IQ for resource ~s", [From#jid.lresource]),
-  process_iq(From#jid.lresource, SubEl),
+    #iq{type = set, sub_el = SubEl} = IQ) ->
+  LResource = From#jid.lresource,
+  case {SubEl} of
+    {#xmlel{name = <<"register">>}} ->
+      ?INFO_MSG("Starting to process token IQ for resource ~s", [From#jid.lresource]),
+      process_iq(From#jid.lresource, SubEl);
+    {#xmlel{name = <<"unregister">>}} ->
+      cache_tab:delete(resource_tokens, LResource,
+        fun() -> ?INFO_MSG("Token unregistered for Resource ~s", [LResource]) end);
+    _ ->
+      ?ERROR_MSG("Unknow element name for token IQ", [])
+  end
   IQ#iq{type = result, sub_el = []}. %% We don't need the result, but the handler have to send something.
 
 process_iq(Resource, SubEl) ->
