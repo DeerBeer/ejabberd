@@ -102,7 +102,7 @@ process_iq(Resource, SubEl) ->
     _ ->
       case fxml:get_tag_attr(<<"token">>, SubEl) of
         {Key, Token} -> cache_tab:insert(resource_tokens, LResource, Token,
-          fun() -> ?INFO_MSG("Received Token ~s for Resource ~s", [Token, LResource]) end);
+          fun() -> ?INFO_MSG("Caching Token ~s for Resource ~s", [Token, LResource]) end);
         _ ->
           ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", [])
       end
@@ -156,7 +156,7 @@ user_online(_SID, JID, _Info) ->
   delete_resource(JID#jid.lserver, JID#jid.lresource).
 
 user_offline(_SID, JID, _Info) ->
-  LResource = JID#jid.lresource,
+  LResource = jlib:resourceprep(JID#jid.lresource),
   case cache_tab:lookup(archive_prefs, LResource,
     fun() ->
       ?INFO_MSG("Token search finished for Resource ~s", [LResource])
