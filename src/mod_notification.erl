@@ -12,6 +12,7 @@
 -include("logger.hrl").
 -include("jlib.hrl").
 -include("ejabberd_sql_pt.hrl").
+-include("mod_notification.hrl").
 
 -behaviour(gen_mod).
 
@@ -24,7 +25,7 @@
 -define(CONTENT_TYPE, "application/x-www-form-urlencoded;charset=UTF-8").
 
 
--export([start/2, stop/1, user_send_packet/4, iq/3]).
+-export([start/2, stop/1, user_send_packet/4, iq/3, user_offline/3, user_online/3]).
 
 %% 114196@stackoverflow
 -spec(url_encode(string()) -> string()).
@@ -80,91 +81,53 @@ send([{Key, Value}|R], PUSH_URL) ->
 	{ok, RawResponse} = httpc:request(post, {PUSH_URL, Header, ?CONTENT_TYPE, Body}, [], []),
 	%% {{"HTTP/1.1",200,"OK"} ..}
 	{{_, SCode, Status}, ResponseBody} = {element(1, RawResponse), element(3, RawResponse)},
-	%% TODO: Errors 5xx
 	case catch SCode of
-		200 -> ?DEBUG("mod_notification: A message was sent", []);
+		200 -> ?INFO_MSG("mod_notification: A message was sent", []);
 		401 -> ?ERROR_MSG("mod_notification: ~s", [Status]);
 		_ -> ?ERROR_MSG("mod_notification: ~s", [ResponseBody])
 	end.
 
-%% TODO: Define some kind of a shaper to prevent floods and the GCM API to burn out :/
-%% Or this could be the limits, like 10 messages/user, 10 messages/hour, etc
-message(From, To, Packet) ->
-	Type = xml:get_tag_attr_s(<<"type">>, Packet),
-	?INFO_MSG("Offline message ~s", [From]),
-	case catch Type of 
-		"normal" -> ok;
-		_ ->
-			%% Strings
-			JFrom = jlib:jid_to_string(From#jid{user = From#jid.user, server = From#jid.server, resource = <<"">>}),
-			JTo = jlib:jid_to_string(To#jid{user = To#jid.user, server = To#jid.server, resource = <<"">>}),
-			ToUser = To#jid.user,
-			ToServer = To#jid.server,
 
-			Body = xml:get_path_s(Packet, [{elem, <<"body">>}, cdata]),
+iq(#jid{resource = Resource} = From, To, #iq{attrs = Attrs} = IQ) ->
+  LResource = jlib:resourceprep(Resource),
 
-			%% Checking subscription
-			{Subscription, _Groups} = 
-				ejabberd_hooks:run_fold(roster_get_jid_info, ToServer, {none, []}, [ToUser, ToServer, From]),
-			case Subscription of
-				both ->
-					case catch Body of
-						<<>> -> ok; %% There is no body
-						_ ->
-							Result = mnesia:dirty_read(offline_tokens, {ToUser, ToServer}),
-							case catch Result of 
-								[] -> ?DEBUG("mod_notification: No such record found for ~s", [JTo]);
-								[#offline_tokens{token = API_KEY}] ->
-									Args = [{"registration_id", API_KEY}, {"data.message", Body}, {"data.source", JFrom}, {"data.destination", JTo}],
-									send(Args, ejabberd_config:get_global_option(push_url, fun(V) -> V end))
-							end
-						end;
-					_ -> ok
-			end
-	end.
+  case fxml:get_attr_s(<<"regid">>, Attrs) of
+    <<>> ->
+      case fxml:get_attr_s(<<"token">>, Attrs) of
+        <<>> ->
+          ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", []);
+        {Token}-> cache_tab:insert(tab_name, LResource, Token,
+          fun() -> ?INFO_MSG("Received Token ~s for Resource ~s", Token, LResource) end)
+      end;
+    {Token}-> cache_tab:insert(tab_name, LResource, Token,
+      fun() -> ?INFO_MSG("Received Token ~s for Resource ~s", Token, LResource) end)
+  end,
 
+  IQ#iq{type=result, sub_el=[]}. %% We don't need the result, but the handler have to send something.
 
-iq(#jid{user = User, server = Server} = From, To, #iq{type = Type, sub_el = SubEl} = IQ) ->
-	LUser = jlib:nodeprep(User),
-	LServer = jlib:nameprep(Server),
-
-	{MegaSecs, Secs, _MicroSecs} = now(),
-	TimeStamp = MegaSecs * 1000000 + Secs,
-
-	API_KEY = xml:get_tag_cdata(xml:get_subtag(SubEl, <<"key">>)),
-
-	F = fun() -> mnesia:write(#offline_tokens{user={LUser, LServer}, token=API_KEY, time=TimeStamp}) end,
-
-	case catch mnesia:dirty_read(offline_tokens, {LUser, LServer}) of
-		[] ->
-			mnesia:transaction(F),
-			?DEBUG("mod_notification: New user registered ~s@~s", [LUser, LServer]);
-
-		%% Record exists, the key is equal to the one we know
-		[#offline_tokens{user={LUser, LServer}, token=API_KEY}] ->
-			mnesia:transaction(F),
-			?DEBUG("mod_notification: Updating time for user ~s@~s", [LUser, LServer]);
-
-		%% Record for this key was found, but for another key
-		[#offline_tokens{user={LUser, LServer}, token=_KEY}] ->
-			mnesia:transaction(F),
-			?DEBUG("mod_notification: Updating token for user ~s@~s", [LUser, LServer])
-		end,
-	
-	IQ#iq{type=result, sub_el=[]}. %% We don't need the result, but the handler have to send something.
-
-
-start(Host, Opts) -> 
-	mnesia:create_table(offline_tokens, [{disc_copies, [node()]}, {attributes, record_info(fields, offline_tokens)}]),
+start(Host, Opts) ->
+  init_cache(Opts),
 	case catch ejabberd_config:get_global_option(push_url, fun(V) -> V end) of
 		undefined -> ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", []);
 		_ ->
 			gen_iq_handler:add_iq_handler(ejabberd_local, Host, <<?NS_GCM>>, ?MODULE, iq, no_queue),
       gen_iq_handler:add_iq_handler(ejabberd_local, Host, <<?NS_APN>>, ?MODULE, iq, no_queue),
       ejabberd_hooks:add(user_send_packet, Host, ?MODULE, user_send_packet, 500),
+      ejabberd_hooks:add(sm_register_connection_hook, Host, ?MODULE, user_online, 100),
+      ejabberd_hooks:add(sm_remove_connection_hook, Host, ?MODULE, user_offline, 100),
 			?INFO_MSG("mod_notification Has started successfully!", []),
 			ok
 		end.
+
+init_cache(Opts) ->
+  MaxSize = gen_mod:get_opt(cache_size, Opts,
+    fun(I) when is_integer(I), I>0 -> I end,
+    1000),
+  LifeTime = gen_mod:get_opt(cache_life_time, Opts,
+    fun(I) when is_integer(I), I>0 -> I end,
+    timer:hours(1) div 1000),
+  cache_tab:new(resource_tokens, [{max_size, MaxSize},
+    {life_time, LifeTime}]).
 
 should_send_notification(#xmlel{name = <<"message">>} = Pkt, LServer) ->
   case fxml:get_attr_s(<<"type">>, Pkt#xmlel.attrs) of
@@ -178,6 +141,21 @@ should_send_notification(#xmlel{name = <<"message">>} = Pkt, LServer) ->
       end;
     _ ->
       false
+  end.
+
+user_online(_SID, JID, _Info) ->
+  delete_resource(JID#jid.lserver, JID#jid.lresource).
+
+user_offline(_SID, JID, _Info) ->
+  LResource = JID#jid.lresource,
+  case cache_tab:lookup(archive_prefs, LResource,
+    fun() ->
+      ?INFO_MSG("Found Token for Resource ~s", LResource)
+    end) of
+    {ok, Token} ->
+      TSinteger = p1_time_compat:system_time(micro_seconds),
+      insert_offline_token(JID#jid.lserver, JID#jid.luser, LResource, Token, TSinteger, 0);
+    _ -> ?INFO_MSG("No Token for Resource ~s", LResource)
   end.
 
 
@@ -226,17 +204,17 @@ update_badge(LServer, Resource, Badges) ->
     " badges=%(Badges)d"
     "where resource=%(Resource)s")) of
     {updated, _} ->
-      ?DEBUG("Sucessfully update badge for resource ~s", [Resource]);
+      ?INFO_MSG("Sucessfully update badge for resource ~s", [Resource]);
     _Err ->
       ?ERROR_MSG("There was a ERROR increasing badge for resource ~s", [Resource])
   end.
 
-delete_resource(LServer, Resource, Badges) ->
+delete_resource(LServer, Resource) ->
   case catch ejabberd_sql:sql_query_t(
     ?SQL("delete from offline_tokens where "
     "resource=%(Resource)s")) of
     {updated, _} ->
-      ?DEBUG("Sucessfully deleted offline_token for resource ~s", [Resource]);
+      ?INFO_MSG("Sucessfully deleted offline_token for resource ~s", [Resource]);
     _Err ->
       ?ERROR_MSG("There was a ERROR deleteting offline_token for resource ~s", [Resource])
   end.
@@ -288,4 +266,13 @@ get_body_text(From, MessageFormat, Body, Pkt) ->
     _ -> From ++ Body
   end.
 
-stop(Host) -> ok.
+stop(Host) ->
+  ejabberd_hooks:delete(user_send_packet, Host, ?MODULE,
+    user_send_packet, 500),
+  ejabberd_hooks:delete(sm_register_connection_hook, Host, ?MODULE,
+    user_online, 100),
+  ejabberd_hooks:delete(sm_remove_connection_hook, Host, ?MODULE,
+    user_offline, 100),
+  gen_iq_handler:remove_iq_handler(ejabberd_local, Host, ?NS_GCM),
+  gen_iq_handler:remove_iq_handler(ejabberd_local, Host, ?NS_GCM),
+  ok.
