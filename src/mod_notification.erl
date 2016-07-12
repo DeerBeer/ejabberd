@@ -87,8 +87,12 @@ send([{Key, Value}|R], PUSH_URL) ->
 		_ -> ?ERROR_MSG("mod_notification: ~s", [ResponseBody])
 	end.
 
+iq(#jid{resource = LResource},
+    #jid{lserver = LServer},
+    #iq{type = get, sub_el = #xmlel{name = <<"register">>}} = IQ) ->
+  process_iq(LResource, IQ).
 
-iq(#jid{resource = Resource} = From, To, #iq{attrs = Attrs} = IQ) ->
+process_iq(Resource, #iq{sub_el = #xmlel{attrs = Attrs}} = IQ) ->
   LResource = jlib:resourceprep(Resource),
 
   case fxml:get_attr_s(<<"regid">>, Attrs) of
