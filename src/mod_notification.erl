@@ -129,7 +129,7 @@ start(Host, Opts) ->
       ejabberd_hooks:add(user_send_packet, Host, ?MODULE, user_send_packet, 500),
       ejabberd_hooks:add(sm_register_connection_hook, Host, ?MODULE, user_online, 100),
       ejabberd_hooks:add(sm_remove_connection_hook, Host, ?MODULE, user_offline, 100),
-      ?INFO_MSG("mod_notification Has started successfully!", []),
+      ?INFO_MSG("mod_notification Has started successfully on Host ~s", [Host]),
       ok
   end.
 
@@ -192,9 +192,13 @@ user_send_packet(Pkt, C2SState, JID, Peer) ->
 send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
   Body = fxml:get_subtag_cdata(Pkt, <<"body">>),
   MessageFormat = get_message_format(Pkt),
-  MessageBody = get_body_text(LUser, MessageFormat, Body, Pkt),
+  chat_body = string:concat(binary_to_list(LUser), string:concat("", binary_to_list(Body))),
+  MessageBody = get_body_text(LUser, MessageFormat, chat_body, Pkt),
   Message = #{"msg" => MessageBody, "from" => LUser, "type" => MessageFormat, "format" => "chat"},
-  case gen_mod:get_module_opt(LServer, ?MODULE, push_url, fun(A) when is_binary(A) -> A end, "") of
+  push_url = gen_mod:get_module_opt(LServer, ?MODULE, push_url, fun(A) when is_binary(A) -> A end, ""),
+  ?INFO_MSG("push_url is ~s", [push_url]),
+  case push_url of
+    undefined ->  ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", []);
     {PushUrl} -> PushUrl,
       case catch ejabberd_sql:sql_query(
         LServer,
@@ -216,8 +220,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
             end, Rows);
         _Err ->
           []
-      end;
-    _ -> ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", [])
+      end
   end.
 
 
@@ -262,17 +265,13 @@ insert_offline_token(LServer, SUser, SResurce, SToken, STime, SBadges) ->
 
 get_message_format(Pkt) ->
   case fxml:get_subtag(Pkt, <<"message_format">>) of
-    <<>> ->
-%% Empty
-      "application/chat";
     {MessageFormat} ->
-      case xml:get_subtag(MessageFormat, <<"format">>) of
-        <<>> ->
-%% Empty body
-          "application/chat";
+      case xml:get_subtag_cdata(MessageFormat, <<"format">>) of
+        {Format} -> Format;
         _ ->
-          xml:get_subtag_cdata(MessageFormat, <<"format">>)
-      end
+          "application/chat"
+      end;
+    _ -> "application/chat"
   end.
 
 get_body_text(From, MessageFormat, Body, Pkt) ->
@@ -280,15 +279,13 @@ get_body_text(From, MessageFormat, Body, Pkt) ->
     {"application/file_sharing"} ->
       From ++ " sent you a file";
     {"application/ping"} ->
-      From ++ " pinged youe";
+      From ++ " pinged you";
     {"announcement"} ->
       case fxml:get_subtag_cdata(Pkt, <<"subject">>) of
-        <<>> ->
-%% Empty body
-          From ++ Body;
-        {Subject} -> Subject
+        {Subject} -> Subject;
+        _ -> Body
       end;
-    _ -> From ++ Body
+    _ -> Body
   end.
 
 stop(Host) ->
