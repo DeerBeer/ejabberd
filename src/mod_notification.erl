@@ -209,7 +209,6 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
         {selected, Rows} ->
           lists:flatmap(
             fun({Resource, Token, Badges}) ->
-              Badges = Badges + 1,
               Args = [{"push", Token},
                 {"message", Message},
                 {"username", LUser},
