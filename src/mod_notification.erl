@@ -209,9 +209,9 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
           lists:flatmap(
             fun({Resource, Token, Badges}) ->
               Args = [{"push", binary_to_list(Token)},
-                {"message.msg", binary_to_list(MessageBody)},
+                {"message.msg", MessageBody},
                 {"message.from", LUser},
-                {"message.type", binary_to_list(MessageFormat)},
+                {"message.type", MessageFormat},
                 {"message.format", binary_to_list("chat")},
                 {"username", LUser},
                 {"title", binary_to_list("PRIMO Message")},
@@ -272,9 +272,9 @@ get_message_format(Pkt) ->
       case xml:get_subtag_cdata(MessageFormat, <<"format">>) of
         {Format} -> Format;
         _ ->
-          "application/chat"
+          binary_to_list("application/chat")
       end;
-    _ -> "application/chat"
+    _ -> binary_to_list("application/chat")
   end.
 
 get_body_text(From, MessageFormat, Body, Pkt) ->
