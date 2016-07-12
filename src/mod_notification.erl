@@ -1,5 +1,5 @@
 %% Google Cloud Messaging for Ejabberd
-%% Created: 02/08/2015 by mrDoctorWho
+%% Created: 02/08/2015 by Laslo@Primo.me
 %% License: MIT/X11
 
 -module(mod_notification).
@@ -97,10 +97,10 @@ iq(#jid{resource = Resource} = From, To, #iq{attrs = Attrs} = IQ) ->
         <<>> ->
           ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", []);
         {Token}-> cache_tab:insert(tab_name, LResource, Token,
-          fun() -> ?INFO_MSG("Received Token ~s for Resource ~s", Token, LResource) end)
+          fun() -> ?INFO_MSG("Received Token ~s for Resource ~s", [Token, LResource]) end)
       end;
     {Token}-> cache_tab:insert(tab_name, LResource, Token,
-      fun() -> ?INFO_MSG("Received Token ~s for Resource ~s", Token, LResource) end)
+      fun() -> ?INFO_MSG("Received Token ~s for Resource ~s", [Token, LResource]) end)
   end,
 
   IQ#iq{type=result, sub_el=[]}. %% We don't need the result, but the handler have to send something.
@@ -150,12 +150,12 @@ user_offline(_SID, JID, _Info) ->
   LResource = JID#jid.lresource,
   case cache_tab:lookup(archive_prefs, LResource,
     fun() ->
-      ?INFO_MSG("Found Token for Resource ~s", LResource)
+      ?INFO_MSG("Found Token for Resource ~s", [LResource])
     end) of
     {ok, Token} ->
       TSinteger = p1_time_compat:system_time(micro_seconds),
       insert_offline_token(JID#jid.lserver, JID#jid.luser, LResource, Token, TSinteger, 0);
-    _ -> ?INFO_MSG("No Token for Resource ~s", LResource)
+    _ -> ?INFO_MSG("No Token for Resource ~s", [LResource])
   end.
 
 
