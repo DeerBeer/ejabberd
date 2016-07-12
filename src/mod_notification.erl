@@ -90,6 +90,7 @@ send([{Key, Value} | R], PUSH_URL) ->
 iq(#jid{resource = LResource},
     #jid{lserver = LServer},
     #iq{type = get, sub_el = #xmlel{name = <<"register">>}} = IQ) ->
+  ?INFO_MSG("Starting to process token IQ", []),
   process_iq(LResource, IQ).
 
 process_iq(Resource, #iq{sub_el = #xmlel{attrs = Attrs}} = IQ) ->
@@ -106,7 +107,7 @@ process_iq(Resource, #iq{sub_el = #xmlel{attrs = Attrs}} = IQ) ->
     {Token} -> cache_tab:insert(tab_name, LResource, Token,
       fun() -> ?INFO_MSG("Received Token ~s for Resource ~s", [Token, LResource]) end)
   end,
-
+  ?INFO_MSG("Finished processing Token for Resource ~s", [LResource]),
   IQ#iq{type = result, sub_el = []}. %% We don't need the result, but the handler have to send something.
 
 start(Host, Opts) ->
@@ -116,8 +117,8 @@ start(Host, Opts) ->
     "") of
     undefined -> ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", []);
     _ ->
-      gen_iq_handler:add_iq_handler(ejabberd_local, Host, <<?NS_GCM>>, ?MODULE, iq, no_queue),
-      gen_iq_handler:add_iq_handler(ejabberd_local, Host, <<?NS_APN>>, ?MODULE, iq, no_queue),
+      gen_iq_handler:add_iq_handler(ejabberd_sm, Host, <<?NS_GCM>>, ?MODULE, iq, no_queue),
+      gen_iq_handler:add_iq_handler(ejabberd_sm, Host, <<?NS_APN>>, ?MODULE, iq, no_queue),
       ejabberd_hooks:add(user_send_packet, Host, ?MODULE, user_send_packet, 500),
       ejabberd_hooks:add(sm_register_connection_hook, Host, ?MODULE, user_online, 100),
       ejabberd_hooks:add(sm_remove_connection_hook, Host, ?MODULE, user_offline, 100),
