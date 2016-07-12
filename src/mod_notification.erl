@@ -191,7 +191,7 @@ user_send_packet(Pkt, C2SState, JID, Peer) ->
 
 send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
   BarePeer = Peer#jid.luser,
-  ?INFO_MSG("sending to ~s", [BarePeer]);
+  ?INFO_MSG("sending to ~s", [BarePeer]),
   Body = fxml:get_subtag_cdata(Pkt, <<"body">>),
   MessageFormat = get_message_format(Pkt),
   ChatBody = string:concat(binary_to_list(LUser), binary_to_list(Body)),
@@ -205,7 +205,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
       case catch ejabberd_sql:sql_query(
         LServer,
         ?SQL("select @(resource)s, @(token)s, @(badges)d from offline_tokens"
-        " where username=%(BarePeer)s")) of
+        " where user=%(BarePeer)s")) of
         {selected, Rows} ->
           lists:flatmap(
             fun({Resource, Token, Badges}) ->
