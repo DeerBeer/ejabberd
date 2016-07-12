@@ -96,7 +96,6 @@ iq(From,
 
 process_iq(Resource, SubEl) ->
   LResource = jlib:resourceprep(Resource),
-
   case fxml:get_tag_attr(<<"regid">>, SubEl) of
     {Key, Token} -> cache_tab:insert(resource_tokens, LResource, Token,
       fun() -> ?INFO_MSG("Received Token ~s for Resource ~s", [Token, LResource]) end);
