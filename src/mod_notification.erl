@@ -146,7 +146,10 @@ should_send_notification(#xmlel{name = <<"message">>} = Pkt, LServer) ->
       end;
     _ ->
       false
-  end.
+  end;
+should_send_notification(#xmlel{}, _LServer) ->
+  false.
+
 
 user_online(_SID, JID, _Info) ->
   delete_resource(JID#jid.lserver, JID#jid.lresource).
@@ -170,7 +173,8 @@ user_send_packet(Pkt, C2SState, JID, Peer) ->
   From = JID#jid.luser,
   case should_send_notification(Pkt, LServer) of
     true ->
-      send_to_offline_resources(LUser, Peer, Pkt, LServer);
+      send_to_offline_resources(LUser, Peer, Pkt, LServer),
+      Pkt;
     false ->
       Pkt
   end.
