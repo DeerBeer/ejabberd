@@ -165,7 +165,7 @@ user_offline(_SID, JID, _Info) ->
     {ok, Token} ->
       TSinteger = p1_time_compat:system_time(micro_seconds),
       insert_offline_token(JID#jid.lserver, JID#jid.luser, LResource, Token, TSinteger, 0),
-      cache_tab:cache_tab:delete(resource_tokens, LResource,
+      cache_tab:delete(resource_tokens, LResource,
         fun() -> ?INFO_MSG("Token deleted for Resource ~s", [LResource]) end);
     _ -> ?INFO_MSG("No Token for Resource ~s", [LResource])
   end.
