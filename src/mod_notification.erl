@@ -192,14 +192,14 @@ user_send_packet(Pkt, C2SState, JID, Peer) ->
 send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
   Body = fxml:get_subtag_cdata(Pkt, <<"body">>),
   MessageFormat = get_message_format(Pkt),
-  chat_body = string:concat(binary_to_list(LUser), string:concat("", binary_to_list(Body))),
-  MessageBody = get_body_text(LUser, MessageFormat, chat_body, Pkt),
+  ChatBody = string:concat(binary_to_list(LUser), string:concat(binary_to_list(" "), binary_to_list(Body))),
+  MessageBody = get_body_text(LUser, MessageFormat, ChatBody, Pkt),
   Message = #{"msg" => MessageBody, "from" => LUser, "type" => MessageFormat, "format" => "chat"},
-  push_url = gen_mod:get_module_opt(LServer, ?MODULE, push_url, fun(A) when is_binary(A) -> A end, ""),
-  ?INFO_MSG("push_url is ~s", [push_url]),
-  case push_url of
+  PushUrl = gen_mod:get_module_opt(LServer, ?MODULE, push_url, fun(A) -> A end, ""),
+  ?INFO_MSG("push_url is ~s", [PushUrl]),
+  case PushUrl of
     undefined ->  ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", []);
-    {PushUrl} -> PushUrl,
+    _ ->
       case catch ejabberd_sql:sql_query(
         LServer,
         ?SQL("select @(resource)s, @(token)s, @(badges)d from offline_tokens"
