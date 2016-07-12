@@ -25,7 +25,7 @@
 -define(CONTENT_TYPE, "application/x-www-form-urlencoded;charset=UTF-8").
 
 
--export([start/2, stop/1, user_send_packet/4, iq/3, user_offline/3, user_online/3]).
+-export([start/2, stop/1, user_send_packet/4, send_to_offline_resources/4, iq/3, user_offline/3, user_online/3]).
 
 %% 114196@stackoverflow
 -spec(url_encode(string()) -> string()).
