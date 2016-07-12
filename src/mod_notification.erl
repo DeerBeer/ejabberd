@@ -87,11 +87,11 @@ send([{Key, Value} | R], PUSH_URL) ->
     _ -> ?ERROR_MSG("mod_notification: ~s", [ResponseBody])
   end.
 
-iq(#jid{resource = LResource},
-    #jid{lserver = LServer},
+iq(From,
+    To,
     #iq{type = get, sub_el = #xmlel{name = <<"register">>}} = IQ) ->
-  ?INFO_MSG("Starting to process token IQ", []),
-  process_iq(LResource, IQ).
+  ?INFO_MSG("Starting to process token IQ for resource ~s", [From#jid.lresource]),
+  process_iq(From#jid.lresource, IQ).
 
 process_iq(Resource, #iq{sub_el = #xmlel{attrs = Attrs}} = IQ) ->
   LResource = jlib:resourceprep(Resource),
