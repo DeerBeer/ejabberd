@@ -196,7 +196,6 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
   MessageFormat = get_message_format(Pkt),
   ChatBody = string:concat(binary_to_list(LUser), binary_to_list(Body)),
   MessageBody = get_body_text(LUser, MessageFormat, ChatBody, Pkt),
-  Message = #{"msg" => MessageBody, "from" => LUser, "type" => MessageFormat, "format" => "chat"},
   PushUrl = gen_mod:get_module_opt(LServer, ?MODULE, push_url, fun(A) -> A end, ""),
   ?INFO_MSG("push_url is ~s", [PushUrl]),
   case PushUrl of
@@ -210,7 +209,10 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
           lists:flatmap(
             fun({Resource, Token, Badges}) ->
               Args = [{"push", Token},
-                {"message", Message},
+                {"message.msg", MessageBody},
+                {"message.from", LUser},
+                {"message.type", MessageFormat},
+                {"message.format", "chat"},
                 {"username", LUser},
                 {"title", "PRIMO Message"},
                 {"badge", Badges},
