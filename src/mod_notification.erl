@@ -170,7 +170,6 @@ user_offline(_SID, JID, _Info) ->
 user_send_packet(Pkt, C2SState, JID, Peer) ->
   LUser = JID#jid.luser,
   LServer = JID#jid.lserver,
-  From = JID#jid.luser,
   case should_send_notification(Pkt, LServer) of
     true ->
       send_to_offline_resources(LUser, Peer, Pkt, LServer),
