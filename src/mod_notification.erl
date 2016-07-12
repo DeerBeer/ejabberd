@@ -111,7 +111,9 @@ process_iq(Resource, #iq{sub_el = #xmlel{attrs = Attrs}} = IQ) ->
 
 start(Host, Opts) ->
   init_cache(Opts),
-	case catch ejabberd_config:get_global_option(push_url, fun(V) -> V end) of
+  case catch gen_mod:get_module_opt(Host, ?MODULE, push_url,
+      fun(A) when is_binary(A) -> A end,
+      "") of
 		undefined -> ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", []);
 		_ ->
 			gen_iq_handler:add_iq_handler(ejabberd_local, Host, <<?NS_GCM>>, ?MODULE, iq, no_queue),
@@ -179,6 +181,10 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
   MessageFormat = get_message_format(Pkt),
   MessageBody = get_body_text(LUser, MessageFormat, Body, Pkt),
   Message = #{"msg" => MessageBody, "from" => LUser, "type" => MessageFormat, "format" => "chat"},
+  PushUrl = case gen_mod:get_module_opt(Host, ?MODULE, push_url, fun(A) when is_binary(A) -> A end, "") of
+    undefined -> ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", []);
+    {PushUrl} -> PushUrl
+  end,
   case catch ejabberd_sql:sql_query(
     LServer,
     ?SQL("select @(resource)s, @(token)s, @(badges)d from offline_tokens"
@@ -194,7 +200,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
             {"badge", Badges},
             {"category", "IM_ACTION"},
             {"body", Body}],
-          send(Args, ejabberd_config:get_global_option(push_url, fun(V) -> V end)),
+          send(Args, PushUrl),
           update_badge(LServer, Resource, Badges)
         end, Rows);
     _Err ->
