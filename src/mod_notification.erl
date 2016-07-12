@@ -25,7 +25,7 @@
 -define(CONTENT_TYPE, "application/x-www-form-urlencoded;charset=UTF-8").
 
 
--export([start/2, stop/1, user_send_packet/4, send_to_offline_resources/4, iq/3, user_offline/3, user_online/3]).
+-export([start/2, stop/1, user_send_packet/4, send_to_offline_resources/4, iq/3, user_offline/3, user_online/3, mod_opt_type/1]).
 
 %% 114196@stackoverflow
 -spec(url_encode(string()) -> string()).
@@ -206,86 +206,87 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
         _Err ->
           []
       end;
-      _ -> ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", [])
-end .
+    _ -> ?ERROR_MSG("There is no PUSH URL set! The PUSH module won't work without the URL!", [])
+  end.
 
 
 update_badge(LServer, Resource, Badges) ->
-case catch ejabberd_sql:sql_query(
-LServer,
-?SQL("update offline_tokens set"
-" badges=%(Badges)d"
-"where resource=%(Resource)s")) of
-{updated, _} ->
-?INFO_MSG("Sucessfully update badge for resource ~s", [Resource]);
-_Err ->
-?ERROR_MSG("There was a ERROR increasing badge for resource ~s", [Resource])
-end .
+  case catch ejabberd_sql:sql_query(
+    LServer,
+    ?SQL("update offline_tokens set"
+    " badges=%(Badges)d"
+    "where resource=%(Resource)s")) of
+    {updated, _} ->
+      ?INFO_MSG("Sucessfully update badge for resource ~s", [Resource]);
+    _Err ->
+      ?ERROR_MSG("There was a ERROR increasing badge for resource ~s", [Resource])
+  end.
 
 delete_resource(LServer, Resource) ->
-case catch ejabberd_sql:sql_query_t(
-?SQL("delete from offline_tokens where "
-"resource=%(Resource)s")) of
-{updated, _} ->
-?INFO_MSG("Sucessfully deleted offline_token for resource ~s", [Resource]);
-_Err ->
-?ERROR_MSG("There was a ERROR deleteting offline_token for resource ~s", [Resource])
-end .
+  case catch ejabberd_sql:sql_query(
+    LServer,
+    ?SQL("delete from offline_tokens where "
+    "resource=%(Resource)s")) of
+    {updated, _} ->
+      ?INFO_MSG("Sucessfully deleted offline_token for resource ~s", [Resource]);
+    _Err ->
+      ?ERROR_MSG("There was a ERROR deleteting offline_token for resource ~s", [Resource])
+  end.
 
 insert_offline_token(LServer, SUser, SResurce, SToken, STime, SBadges) ->
-case ejabberd_sql:sql_query(
-LServer,
-?SQL("insert into offline_tokens (user, resource,"
-" token, time, badges) values ("
-"%(SUser)s, "
-"%(SResurce)s, "
-"%(SToken)s, "
-"%(STime)d, "
-"%(SBadges)d)")) of
-{updated, _} ->
-{ok};
-Err ->
-Err
-end .
+  case ejabberd_sql:sql_query(
+    LServer,
+    ?SQL("insert into offline_tokens (user, resource,"
+    " token, time, badges) values ("
+    "%(SUser)s, "
+    "%(SResurce)s, "
+    "%(SToken)s, "
+    "%(STime)d, "
+    "%(SBadges)d)")) of
+    {updated, _} ->
+      {ok};
+    Err ->
+      Err
+  end.
 
 get_message_format(Pkt) ->
-case fxml:get_subtag(Pkt, <<"message_format">>) of
-<<>> ->
+  case fxml:get_subtag(Pkt, <<"message_format">>) of
+    <<>> ->
 %% Empty
-"application/chat";
-{MessageFormat} ->
-case xml:get_subtag(MessageFormat, <<"format">>) of
-<<>> ->
+      "application/chat";
+    {MessageFormat} ->
+      case xml:get_subtag(MessageFormat, <<"format">>) of
+        <<>> ->
 %% Empty body
-"application/chat";
-_ ->
-xml:get_subtag_cdata(MessageFormat, <<"format">>)
-end
-end .
+          "application/chat";
+        _ ->
+          xml:get_subtag_cdata(MessageFormat, <<"format">>)
+      end
+  end.
 
 get_body_text(From, MessageFormat, Body, Pkt) ->
-case MessageFormat of
-{"application/file_sharing"} ->
-From ++ " sent you a file";
-{"application/ping"} ->
-From ++ " pinged youe";
-{"announcement"} ->
-case fxml:get_subtag_cdata(Pkt, <<"subject">>) of
-<<>> ->
+  case MessageFormat of
+    {"application/file_sharing"} ->
+      From ++ " sent you a file";
+    {"application/ping"} ->
+      From ++ " pinged youe";
+    {"announcement"} ->
+      case fxml:get_subtag_cdata(Pkt, <<"subject">>) of
+        <<>> ->
 %% Empty body
-From ++ Body;
-{Subject} -> Subject
-end;
-_ -> From ++ Body
-end .
+          From ++ Body;
+        {Subject} -> Subject
+      end;
+    _ -> From ++ Body
+  end.
 
 stop(Host) ->
-ejabberd_hooks:delete(user_send_packet, Host, ?MODULE,
-user_send_packet, 500),
-ejabberd_hooks:delete(sm_register_connection_hook, Host, ?MODULE,
-user_online, 100),
-ejabberd_hooks:delete(sm_remove_connection_hook, Host, ?MODULE,
-user_offline, 100),
-gen_iq_handler:remove_iq_handler(ejabberd_local, Host, ?NS_GCM),
-gen_iq_handler:remove_iq_handler(ejabberd_local, Host, ?NS_GCM),
-ok.
+  ejabberd_hooks:delete(user_send_packet, Host, ?MODULE,
+    user_send_packet, 500),
+  ejabberd_hooks:delete(sm_register_connection_hook, Host, ?MODULE,
+    user_online, 100),
+  ejabberd_hooks:delete(sm_remove_connection_hook, Host, ?MODULE,
+    user_offline, 100),
+  gen_iq_handler:remove_iq_handler(ejabberd_local, Host, ?NS_GCM),
+  gen_iq_handler:remove_iq_handler(ejabberd_local, Host, ?NS_GCM),
+  ok.
