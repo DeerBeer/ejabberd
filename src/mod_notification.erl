@@ -91,7 +91,8 @@ iq(From,
     To,
     #iq{type = set, sub_el = #xmlel{name = <<"register">>}} = IQ) ->
   ?INFO_MSG("Starting to process token IQ for resource ~s", [From#jid.lresource]),
-  process_iq(From#jid.lresource, sub_el).
+  process_iq(From#jid.lresource, sub_el),
+  IQ#iq{type = result, sub_el = []}. %% We don't need the result, but the handler have to send something.
 
 process_iq(Resource, sub_el) ->
   LResource = jlib:resourceprep(Resource),
@@ -107,8 +108,7 @@ process_iq(Resource, sub_el) ->
     {Token} -> cache_tab:insert(tab_name, LResource, Token,
       fun() -> ?INFO_MSG("Received Token ~s for Resource ~s", [Token, LResource]) end)
   end,
-  ?INFO_MSG("Finished processing Token for Resource ~s", [LResource]),
-  IQ#iq{type = result, sub_el = []}. %% We don't need the result, but the handler have to send something.
+  ?INFO_MSG("Finished processing Token for Resource ~s", [LResource]).
 
 start(Host, Opts) ->
   init_cache(Opts),
