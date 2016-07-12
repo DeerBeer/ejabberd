@@ -160,14 +160,14 @@ user_offline(_SID, JID, _Info) ->
   LResource = JID#jid.lresource,
   case cache_tab:lookup(archive_prefs, LResource,
     fun() ->
-      ?INFO_MSG("Found Token for Resource ~s", [LResource])
+      ?INFO_MSG("Token search finished for Resource ~s", [LResource])
     end) of
     {ok, Token} ->
       TSinteger = p1_time_compat:system_time(micro_seconds),
       insert_offline_token(JID#jid.lserver, JID#jid.luser, LResource, Token, TSinteger, 0),
       cache_tab:delete(resource_tokens, LResource,
         fun() -> ?INFO_MSG("Token deleted for Resource ~s", [LResource]) end);
-    _ -> ?INFO_MSG("No Token for Resource ~s", [LResource])
+    error -> ?INFO_MSG("No Token for Resource ~s, error: ~s", [LResource, error])
   end.
 
 
