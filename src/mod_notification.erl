@@ -71,13 +71,19 @@ json_encode(Data) ->
 json_encode([], Acc) ->
   Acc;
 json_encode([{Key, Value} | R], "") ->
+  ?INFO_MSG("PROCESSING KEY ~s", [Key]),
   case is_binary(Value) of
-    true -> json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
+    true ->
+      ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
+      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
     _ -> json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
   end;
 json_encode([{Key, Value} | R], Acc) ->
+  ?INFO_MSG("PROCESSING KEY ~s", [Key]),
   case is_binary(Value) of
-    true ->json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
+    true ->
+      ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
+      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
     _ -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
   end.
 
