@@ -1,5 +1,5 @@
-%% Google Cloud Messaging for Ejabberd
-%% Created: 02/08/2015 by Laslo@Primo.me
+%% Push URL call for offline users for Ejabberd
+%% Created: 08/07/2016 by Laslo@Primo.me
 %% License: MIT/X11
 
 -module(mod_notification).
@@ -15,14 +15,9 @@
 
 -behaviour(gen_mod).
 
--record(gcm_users, {user, gcm_key, last_seen}).
--record(offline_tokens, {resource, user, token, time, badge}).
-
-
 -define(NS_GCM, "urn:xmpp:gcm:0").
 -define(NS_APN, "urn:xmpp:apn:0").
 -define(CONTENT_TYPE, "application/x-www-form-urlencoded;charset=UTF-8").
-
 
 -export([start/2, stop/1, user_send_packet/4, send_to_offline_resources/4, iq/3, user_offline/3, user_online/3, mod_opt_type/1]).
 
@@ -68,6 +63,15 @@ url_encode([{Key, Value} | R], "") ->
   url_encode(R, escape_uri(Key) ++ "=" ++ escape_uri(Value));
 url_encode([{Key, Value} | R], Acc) ->
   url_encode(R, Acc ++ "&" ++ escape_uri(Key) ++ "=" ++ escape_uri(Value)).
+
+json_encode(Data) ->
+  url_encode(Data, "").
+json_encode([], Acc) ->
+  Acc;
+json_encode([{Key, Value} | R], "") ->
+  url_encode(R, escape_uri(Key) ++ ":" ++ escape_uri(Value));
+json_encode([{Key, Value} | R], Acc) ->
+  url_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value)).
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
 
@@ -208,18 +212,22 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
         {selected, Rows} ->
           lists:flatmap(
             fun({Resource, Token, Badges}) ->
-              Args = [{"push", binary_to_list(Token)},
-                {"message.msg", MessageBody},
-                {"message.from", LUser},
-                {"message.type", MessageFormat},
-                {"message.format", binary_to_list("chat")},
+
+              MessageData = [{"msg", (MessageBody},
+              {"from", LUser},
+              {"type", MessageFormat},
+              {"format", "chat"}],
+
+              Args = [{"push", Token},
+                {"message", json_encode(MessageData)},
                 {"username", LUser},
-                {"title", binary_to_list("PRIMO Message")},
+                {"title", "PRIMO Message"},
                 {"badge", integer_to_binary(Badges)},
-                {"category", binary_to_list("IM_ACTION")},
+                {"category", "IM_ACTION"},
                 {"body", Body}],
               send(Args, PushUrl),
-              update_badge(LServer, Resource)
+              update_badge(LServer, Resource),
+              Pkt
             end, Rows);
         _Err ->
           []
@@ -272,9 +280,9 @@ get_message_format(Pkt) ->
       case xml:get_subtag_cdata(MessageFormat, <<"format">>) of
         {Format} -> Format;
         _ ->
-          binary_to_list("application/chat")
+          "application/chat"
       end;
-    _ -> binary_to_list("application/chat")
+    _ -> "application/chat"
   end.
 
 get_body_text(From, MessageFormat, Body, Pkt) ->
