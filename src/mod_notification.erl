@@ -218,6 +218,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
   Body = fxml:get_subtag_cdata(Pkt, <<"body">>),
   MessageFormat = get_message_format(Pkt),
   ?INFO_MSG("MessageFormat is ~s", [MessageFormat]),
+  ?INFO_MSG("MessageFormat is ~s", [list_to_binary(MessageFormat)]),
   ChatBody = escape_uri(LUser) ++ ": " ++ escape_uri(Body),
   MessageBody = get_body_text(LUser, MessageFormat, ChatBody, Pkt),
   ?INFO_MSG("MessageBody is ~s", [MessageBody]),
