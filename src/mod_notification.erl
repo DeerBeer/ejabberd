@@ -71,18 +71,16 @@ json_encode(Data) ->
 json_encode([], Acc) ->
   Acc;
 json_encode([{Key, Value} | R], "") ->
-  ?INFO_MSG("PROCESSING KEY ~s", [Key]),
-  case is_binary(Value) of
-    true ->
+  case Key of
+    "message" ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
       json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
     _ ->
       json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
   end;
 json_encode([{Key, Value} | R], Acc) ->
-  ?INFO_MSG("PROCESSING KEY ~s", [Key]),
-  case is_binary(Value) of
-    true ->
+  case Key of
+    "message" ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
       json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
     _ -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
@@ -232,15 +230,15 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
               MessageData = [{"msg", Body},
               {"from", LUser},
               {"type", MessageFormat},
-              {"format", list_to_binary("chat")}],
+              {"format", "chat"}],
 
               Args = [{"push", Token},
                 {"message", MessageData},
                 {"username", LUser},
-                {"title", list_to_binary("PRIMO Message")},
+                {"title", "PRIMO Message"},
                 {"badge", integer_to_binary(Badges)},
-                {"category", list_to_binary("IM_ACTION")},
-                {"body", list_to_binary(MessageBody)}],
+                {"category", "IM_ACTION"},
+                {"body", MessageBody}],
               send(Args, PushUrl),
               update_badge(LServer, Resource),
               Pkt
@@ -296,17 +294,17 @@ get_message_format(Pkt) ->
       case xml:get_subtag_cdata(MessageFormat, <<"format">>) of
         {Format} -> Format;
         _ ->
-          list_to_binary("application/chat")
+          "application/chat"
       end;
-    _ -> list_to_binary("application/chat")
+    _ -> "application/chat"
   end.
 
 get_body_text(From, MessageFormat, Body, Pkt) ->
   case MessageFormat of
     {"application/file_sharing"} ->
-      list_to_binary(escape_uri(From) ++ escape_uri(" sent you a file"));
+      escape_uri(From) ++ escape_uri(" sent you a file");
     {"application/ping"} ->
-      list_to_binary(escape_uri(From) ++ escape_uri(" pinged you"));
+      escape_uri(From) ++ escape_uri(" pinged you");
     {"announcement"} ->
       case fxml:get_subtag_cdata(Pkt, <<"subject">>) of
         {Subject} -> Subject;
