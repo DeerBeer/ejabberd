@@ -74,21 +74,21 @@ json_encode([{Key, Value} | R], "") ->
   ?INFO_MSG("Parsing KEY ~s", [Key]),
   case Key of
     "message" ->
-      ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
+      ?INFO_MSG("KEY ~s is array", [Key]),
       json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
     _ ->
-      ?INFO_MSG("KEY ~s is array", [Key]),
-      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
+      ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
+      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ Value ++ "\"")
   end;
 json_encode([{Key, Value} | R], Acc) ->
   ?INFO_MSG("Parsing KEY ~s", [Key]),
   case Key of
     "message" ->
-      ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
+      ?INFO_MSG("KEY ~s is array", [Key]),
       json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
     _ ->
-      ?INFO_MSG("KEY ~s is array", [Key]),
-      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
+      ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
+      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ Value ++ "\"")
   end.
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
@@ -217,8 +217,10 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
   ?INFO_MSG("sending to ~s", [BarePeer]),
   Body = fxml:get_subtag_cdata(Pkt, <<"body">>),
   MessageFormat = get_message_format(Pkt),
+  ?INFO_MSG("MessageFormat is ~s", [MessageFormat]),
   ChatBody = escape_uri(LUser) ++ ": " ++ escape_uri(Body),
   MessageBody = get_body_text(LUser, MessageFormat, ChatBody, Pkt),
+  ?INFO_MSG("MessageBody is ~s", [MessageBody]),
   PushUrl = gen_mod:get_module_opt(LServer, ?MODULE, push_url, fun(A) -> A end, ""),
   ?INFO_MSG("push_url is ~s", [PushUrl]),
   case PushUrl of
