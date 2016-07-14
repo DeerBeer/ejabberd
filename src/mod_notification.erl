@@ -84,12 +84,12 @@ json_encode([{Key, Value} | R], "") ->
 
 end;
 json_encode([{Key, Value} | R], Acc) ->
-  ?INFO_MSG("Previous result ~p", [Acc]),
   ?INFO_MSG("Parsing KEY ~s", [Key]),
   case Key of
     "message" ->
       ?INFO_MSG("KEY ~s is array", [Key]),
       SubEl = json_encode(Value),
+      ?INFO_MSG("Previous result ~p", [Acc]),
       ?INFO_MSG("Sub element is ~p", [SubEl]),
       json_encode(R, lists:append(Acc, [",\"",Key, "\":{"] ,SubEl, "}"));
     _ ->
