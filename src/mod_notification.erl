@@ -102,7 +102,6 @@ send([{Key, Value} | R], PUSH_URL) ->
   ssl:start(),
   application:start(inets),
   {ok, RawResponse} = httpc:request(post, {?PPS_URL, Header, ?CONTENT_TYPE, Body}, [], []),
-  %% {{"HTTP/1.1",200,"OK"} ..}
   {{_, SCode, Status}, ResponseBody} = {element(1, RawResponse), element(3, RawResponse)},
   case catch SCode of
     200 -> ?INFO_MSG("mod_notification: A message was sent", []);
@@ -235,8 +234,8 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
 
               MessageData = [{"msg", Body},
               {"from", LUser},
-              {"type", MessageFormat},
-              {"format", "chat"}],
+              {"type", "chat"},
+              {"format", MessageFormat}],
 
               Args = [{"push", Token},
                 {"message", MessageData},
