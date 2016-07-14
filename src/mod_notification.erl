@@ -83,7 +83,7 @@ send([{Key, Value} | R], PUSH_URL) ->
   Body = url_encode([{Key, Value} | R]),
   ssl:start(),
   application:start(inets),
-  {ok, RawResponse} = httpc:request(post, {PPS_URL, Header, ?CONTENT_TYPE, Body}, [], []),
+  {ok, RawResponse} = httpc:request(post, {?PPS_URL, Header, ?CONTENT_TYPE, Body}, [], []),
   %% {{"HTTP/1.1",200,"OK"} ..}
   {{_, SCode, Status}, ResponseBody} = {element(1, RawResponse), element(3, RawResponse)},
   case catch SCode of
