@@ -230,14 +230,14 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
               MessageData = [{"msg", Body},
               {"from", LUser},
               {"type", MessageFormat},
-              {"format", "chat"}],
+              {"format", list_to_binary"chat")}],
 
               Args = [{"push", Token},
                 {"message", MessageData},
                 {"username", LUser},
-                {"title", "PRIMO Message"},
+                {"title", list_to_binary"PRIMO Message")},
                 {"badge", integer_to_binary(Badges)},
-                {"category", "IM_ACTION"},
+                {"category", list_to_binary"IM_ACTION")},
                 {"body", MessageBody}],
               send(Args, PushUrl),
               update_badge(LServer, Resource),
@@ -294,17 +294,17 @@ get_message_format(Pkt) ->
       case xml:get_subtag_cdata(MessageFormat, <<"format">>) of
         {Format} -> Format;
         _ ->
-          "application/chat"
+          list_to_binary("application/chat")
       end;
-    _ -> "application/chat"
+    _ -> list_to_binary("application/chat")
   end.
 
 get_body_text(From, MessageFormat, Body, Pkt) ->
   case MessageFormat of
     {"application/file_sharing"} ->
-      From ++ " sent you a file";
+      list_to_binary(escape_uri(From) ++ escape_uri(" sent you a file"));
     {"application/ping"} ->
-      From ++ " pinged you";
+      list_to_binary(escape_uri(From) ++ escape_uri(" pinged you"));
     {"announcement"} ->
       case fxml:get_subtag_cdata(Pkt, <<"subject">>) of
         {Subject} -> Subject;
