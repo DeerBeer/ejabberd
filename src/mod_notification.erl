@@ -77,12 +77,7 @@ json_encode([{Key, Value} | R], "") ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
       json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
     _ ->
-      case is_list(Value) of
-        true ->
-          ?INFO_MSG("KEY ~s, Value ~s is list", [Key, Value]),
-          json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
-        _ -> json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
-      end
+      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
   end;
 json_encode([{Key, Value} | R], Acc) ->
   ?INFO_MSG("PROCESSING KEY ~s", [Key]),
@@ -90,13 +85,7 @@ json_encode([{Key, Value} | R], Acc) ->
     true ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
       json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
-    _ ->
-      case is_list(Value) of
-        true ->
-          ?INFO_MSG("KEY ~s, Value ~s is list", [Key, Value]),
-          json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
-        _ -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
-      end
+    _ -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
   end.
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
@@ -250,7 +239,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
                 {"title", list_to_binary("PRIMO Message")},
                 {"badge", integer_to_binary(Badges)},
                 {"category", list_to_binary("IM_ACTION")},
-                {"body", MessageBody}],
+                {"body", list_to_binary(MessageBody)}],
               send(Args, PushUrl),
               update_badge(LServer, Resource),
               Pkt
@@ -306,9 +295,9 @@ get_message_format(Pkt) ->
       case xml:get_subtag_cdata(MessageFormat, <<"format">>) of
         {Format} -> Format;
         _ ->
-          "application/chat"
+          list_to_binary("application/chat")
       end;
-    _ -> "application/chat"
+    _ -> list_to_binary("application/chat")
   end.
 
 get_body_text(From, MessageFormat, Body, Pkt) ->
