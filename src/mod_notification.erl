@@ -71,6 +71,7 @@ json_encode(Data) ->
 json_encode([], Acc) ->
   Acc;
 json_encode([{Key, Value} | R], "") ->
+  ?INFO_MSG("Parsing KEY ~s", [Key]),
   case Key of
     "message" ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
@@ -79,6 +80,7 @@ json_encode([{Key, Value} | R], "") ->
       json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
   end;
 json_encode([{Key, Value} | R], Acc) ->
+  ?INFO_MSG("Parsing KEY ~s", [Key]),
   case Key of
     "message" ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
@@ -232,7 +234,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
               {"type", MessageFormat},
               {"format", "chat"}],
 
-              Args = [{"push", Token},
+              Args = [{"push", list_to_binary(Token)},
                 {"message", MessageData},
                 {"username", LUser},
                 {"title", "PRIMO Message"},
