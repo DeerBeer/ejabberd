@@ -93,7 +93,7 @@ mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
 %% Send an HTTP request to Google APIs and handle the response
 send([{Key, Value} | R], PUSH_URL) ->
   Header = [],
-  Body = json_encode([{Key, Value} | R]),
+  Body = "{" ++ json_encode([{Key, Value} | R]) ++ "}",
   ?INFO_MSG("Generated body: ~s", [Body]),
   ssl:start(),
   application:start(inets),
