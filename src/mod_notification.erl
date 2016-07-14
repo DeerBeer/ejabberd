@@ -76,7 +76,13 @@ json_encode([{Key, Value} | R], "") ->
     true ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
       json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
-    _ -> json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
+    _ ->
+      case is_list(Value) of
+        true ->
+          ?INFO_MSG("KEY ~s, Value ~s is list", [Key, Value]),
+          json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
+        _ -> json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
+      end
   end;
 json_encode([{Key, Value} | R], Acc) ->
   ?INFO_MSG("PROCESSING KEY ~s", [Key]),
@@ -84,7 +90,13 @@ json_encode([{Key, Value} | R], Acc) ->
     true ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
       json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
-    _ -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
+    _ ->
+      case is_list(Value) of
+        true ->
+          ?INFO_MSG("KEY ~s, Value ~s is list", [Key, Value]),
+          json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
+        _ -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
+      end
   end.
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
@@ -294,9 +306,9 @@ get_message_format(Pkt) ->
       case xml:get_subtag_cdata(MessageFormat, <<"format">>) of
         {Format} -> Format;
         _ ->
-          list_to_binary("application/chat")
+          "application/chat"
       end;
-    _ -> list_to_binary("application/chat")
+    _ -> "application/chat"
   end.
 
 get_body_text(From, MessageFormat, Body, Pkt) ->
