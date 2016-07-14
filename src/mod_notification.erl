@@ -72,9 +72,9 @@ json_encode([], Acc) ->
   Acc;
 json_encode([{Key, Value} | R], "") ->
   case Value of
-    Value when is_list(Value) ->
-      ?INFO_MSG("NoL for key ~s", [Key]),
-      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
+    [Key, SubEl] ->
+      ?INFO_MSG("List for key ~s", [Key]),
+      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(SubEl) ++ "}");
     _ ->
       ?INFO_MSG("Not list key ~s, value ~s", [Key, Value]),
       json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
@@ -82,9 +82,9 @@ json_encode([{Key, Value} | R], "") ->
 
 json_encode([{Key, Value} | R], Acc) ->
   case Value of
-    Value when is_list(Value) ->
+    [Key, SubEl] ->
       ?INFO_MSG("NoL for key ~s", [Key]),
-      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
+      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(SubEl) ++ "}");
     _ ->
       ?INFO_MSG("Not list key ~s, value ~s", [Key, Value]),
       json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
