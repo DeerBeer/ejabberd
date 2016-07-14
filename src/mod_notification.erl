@@ -75,7 +75,9 @@ json_encode([{Key, Value} | R], "") ->
   case Key of
     "message" ->
       ?INFO_MSG("KEY ~s is array", [Key]),
-      json_encode(R, lists:append([",\"",Key, "\":{"] ,json_encode(Value), ["}"]));
+      SubEl = json_encode(Value),
+      ?INFO_MSG("Sub element is ~p", [SubEl]),
+      json_encode(R, lists:append([",\"", Key, "\":{"] ,SubEl, ["}"]));
     _ ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
       json_encode(R, [",\"",Key, "\":\"" ,Value, "\""])
@@ -87,7 +89,7 @@ json_encode([{Key, Value} | R], Acc) ->
   case Key of
     "message" ->
       ?INFO_MSG("KEY ~s is array", [Key]),
-      json_encode(R, lists:append(Acc, [",\"",Key, "\":{"] ,json_encode(Value), ["}"]));
+      json_encode(R, lists:append(Acc, [",\"",Key, "\":{"] ,json_encode(Value), "}"));
     _ ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
       json_encode(R, lists:append(Acc, [",\"",Key, "\":\"" ,Value, "\""]))
