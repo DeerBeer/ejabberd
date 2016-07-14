@@ -234,7 +234,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
               {"type", MessageFormat},
               {"format", "chat"}],
 
-              Args = [{"push", list_to_binary(Token)},
+              Args = [{"push", Token},
                 {"message", MessageData},
                 {"username", LUser},
                 {"title", "PRIMO Message"},
