@@ -18,6 +18,8 @@
 -define(NS_GCM, "urn:xmpp:gcm:0").
 -define(NS_APN, "urn:xmpp:apn:0").
 -define(CONTENT_TYPE, "application/x-www-form-urlencoded;charset=UTF-8").
+-define(PPS_URL, "https://aws-pns-dev-01.primo.me:3000/push/message").
+
 
 -export([start/2, stop/1, user_send_packet/4, send_to_offline_resources/4, iq/3, user_offline/3, user_online/3, mod_opt_type/1]).
 
@@ -81,7 +83,7 @@ send([{Key, Value} | R], PUSH_URL) ->
   Body = url_encode([{Key, Value} | R]),
   ssl:start(),
   application:start(inets),
-  {ok, RawResponse} = httpc:request(post, {PUSH_URL, Header, ?CONTENT_TYPE, Body}, [], []),
+  {ok, RawResponse} = httpc:request(post, {PPS_URL, Header, ?CONTENT_TYPE, Body}, [], []),
   %% {{"HTTP/1.1",200,"OK"} ..}
   {{_, SCode, Status}, ResponseBody} = {element(1, RawResponse), element(3, RawResponse)},
   case catch SCode of
@@ -213,7 +215,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
           lists:flatmap(
             fun({Resource, Token, Badges}) ->
 
-              MessageData = [{"msg", (MessageBody},
+              MessageData = [{"msg", MessageBody},
               {"from", LUser},
               {"type", MessageFormat},
               {"format", "chat"}],
