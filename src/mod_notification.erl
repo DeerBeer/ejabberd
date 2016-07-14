@@ -94,7 +94,7 @@ json_encode([{Key, Value} | R], Acc) ->
       json_encode(R, lists:append(Acc, [",\"",Key, "\":{"] ,SubEl, ["}"]));
     _ ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
-      json_encode(R, lists:append(Acc, [",\"",Key, "\":\"" ,Value, "\""))
+      json_encode(R, lists:append(Acc, [",\"",Key, "\":\"" ,Value, "\""]))
   end.
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
