@@ -94,6 +94,7 @@ mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
 send([{Key, Value} | R], PUSH_URL) ->
   Header = [],
   Body = json_encode([{Key, Value} | R]),
+  ?INFO_MSG("Generated body: ~s", [Body]),
   ssl:start(),
   application:start(inets),
   {ok, RawResponse} = httpc:request(post, {?PPS_URL, Header, ?CONTENT_TYPE, Body}, [], []),
