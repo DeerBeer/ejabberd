@@ -77,6 +77,7 @@ json_encode([{Key, Value} | R], "") ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
       json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
     _ ->
+      ?INFO_MSG("KEY ~s is array", [Key]),
       json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
   end;
 json_encode([{Key, Value} | R], Acc) ->
@@ -85,7 +86,9 @@ json_encode([{Key, Value} | R], Acc) ->
     "message" ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
       json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
-    _ -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
+    _ ->
+      ?INFO_MSG("KEY ~s is array", [Key]),
+      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
   end.
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
