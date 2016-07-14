@@ -71,23 +71,14 @@ json_encode(Data) ->
 json_encode([], Acc) ->
   Acc;
 json_encode([{Key, Value} | R], "") ->
-  case array:is_array(Value) of
-    true ->
-      ?INFO_MSG("List for key ~s", [Key]),
-      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
-    false ->
-      ?INFO_MSG("Not list key ~s, value ~s", [Key, Value]),
-      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
+  case is_binary(Value) of
+    true -> json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
+    _ -> json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
   end;
-
 json_encode([{Key, Value} | R], Acc) ->
-  case array:is_array(Value) of
-    true ->
-      ?INFO_MSG("List for key ~s", [Key]),
-      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
-    false ->
-      ?INFO_MSG("Not list key ~s, value ~s", [Key, Value]),
-      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
+  case is_binary(Value) of
+    true ->json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
+    _ -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
   end.
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
@@ -215,7 +206,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
   ?INFO_MSG("sending to ~s", [BarePeer]),
   Body = fxml:get_subtag_cdata(Pkt, <<"body">>),
   MessageFormat = get_message_format(Pkt),
-  ChatBody = string:concat(binary_to_list(LUser), binary_to_list(Body)),
+  ChatBody = escape_uri(LUser) ++ ": " ++ escape_uri(Body),
   MessageBody = get_body_text(LUser, MessageFormat, ChatBody, Pkt),
   PushUrl = gen_mod:get_module_opt(LServer, ?MODULE, push_url, fun(A) -> A end, ""),
   ?INFO_MSG("push_url is ~s", [PushUrl]),
@@ -230,7 +221,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
           lists:flatmap(
             fun({Resource, Token, Badges}) ->
 
-              MessageData = [{"msg", MessageBody},
+              MessageData = [{"msg", Body},
               {"from", LUser},
               {"type", MessageFormat},
               {"format", "chat"}],
@@ -241,7 +232,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
                 {"title", "PRIMO Message"},
                 {"badge", integer_to_binary(Badges)},
                 {"category", "IM_ACTION"},
-                {"body", Body}],
+                {"body", MessageBody}],
               send(Args, PushUrl),
               update_badge(LServer, Resource),
               Pkt
