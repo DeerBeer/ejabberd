@@ -71,24 +71,17 @@ json_encode(Data) ->
 json_encode([], Acc) ->
   Acc;
 json_encode([{Key, Value} | R], "") ->
-  case Value of
-    [Key, SubEl] ->
-      ?INFO_MSG("List for key ~s", [Key]),
-      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(SubEl) ++ "}");
-    _ ->
       ?INFO_MSG("Not list key ~s, value ~s", [Key, Value]),
-      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
-  end;
-
+      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
+json_encode([{Key, [SubKey, SubValue]} | R], "") ->
+      ?INFO_MSG("List for key ~s", [Key]),
+      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode([SubKey, SubValue]) ++ "}");
 json_encode([{Key, Value} | R], Acc) ->
-  case Value of
-    [Key, SubEl] ->
-      ?INFO_MSG("List for key ~s", [Key]),
-      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(SubEl) ++ "}");
-    _ ->
       ?INFO_MSG("Not list key ~s, value ~s", [Key, Value]),
-      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
-  end.
+      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
+json_encode([{Key, [SubKey, SubValue]} | R], Acc) ->
+      ?INFO_MSG("List for key ~s", [Key]),
+      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode([SubKey, SubValue]) ++ "}").
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
 
