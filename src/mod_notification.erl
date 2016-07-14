@@ -246,7 +246,8 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
                 {"category", "IM_ACTION"},
                 {"body", MessageBody}],
               send(Args, PushUrl),
-              update_badge(LServer, Resource)
+              update_badge(LServer, Resource),
+              [ok]
             end, Rows);
         _Err ->
           []
