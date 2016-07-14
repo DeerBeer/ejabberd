@@ -71,7 +71,7 @@ json_encode(Data) ->
 json_encode([], Acc) ->
   Acc;
 json_encode([{Key, Value} | R], "") ->
-  case is_array(Value) of
+  case array:is_array(Value) of
     true ->
       ?INFO_MSG("List for key ~s", [Key]),
       json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
@@ -81,7 +81,7 @@ json_encode([{Key, Value} | R], "") ->
   end;
 
 json_encode([{Key, Value} | R], Acc) ->
-  case is_array(Value) of
+  case array:is_array(Value) of
     true ->
       ?INFO_MSG("List for key ~s", [Key]),
       json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
