@@ -17,7 +17,7 @@
 
 -define(NS_GCM, "urn:xmpp:gcm:0").
 -define(NS_APN, "urn:xmpp:apn:0").
--define(CONTENT_TYPE, "application/x-www-form-urlencoded;charset=UTF-8").
+-define(CONTENT_TYPE, "application/json").
 -define(PPS_URL, "https://aws-pns-dev-01.primo.me:3000/push/message").
 
 
@@ -71,16 +71,22 @@ json_encode(Data) ->
 json_encode([], Acc) ->
   Acc;
 json_encode([{Key, Value} | R], "") ->
-  json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
+  if
+    is_list(Value) -> json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
+    _ -> json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
+  end;
 json_encode([{Key, Value} | R], Acc) ->
-  json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"").
+  if
+    is_list(Value) -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
+    _ -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
+  end.
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
 
 %% Send an HTTP request to Google APIs and handle the response
 send([{Key, Value} | R], PUSH_URL) ->
   Header = [],
-  Body = url_encode([{Key, Value} | R]),
+  Body = json_encode([{Key, Value} | R]),
   ssl:start(),
   application:start(inets),
   {ok, RawResponse} = httpc:request(post, {?PPS_URL, Header, ?CONTENT_TYPE, Body}, [], []),
@@ -221,7 +227,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
               {"format", "chat"}],
 
               Args = [{"push", Token},
-                {"message", json_encode(MessageData)},
+                {"message", MessageData},
                 {"username", LUser},
                 {"title", "PRIMO Message"},
                 {"badge", integer_to_binary(Badges)},
