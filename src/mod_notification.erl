@@ -250,8 +250,7 @@ send_to_offline_resources(LUser, Peer, Pkt, LServer) ->
             end, Rows);
         _Err ->
           []
-      end,
-      Pkt
+      end
   end.
 
 
@@ -262,9 +261,11 @@ update_badge(LServer, Resource) ->
     " badges=badges + 1 "
     "where resource=%(Resource)s")) of
     {updated, _} ->
-      ?INFO_MSG("Sucessfully update badge for resource ~s", [Resource]);
+      ?INFO_MSG("Sucessfully update badge for resource ~s", [Resource]),
+      ok;
     _Err ->
-      ?ERROR_MSG("There was a ERROR increasing badge for resource ~s", [Resource])
+      ?ERROR_MSG("There was a ERROR increasing badge for resource ~s", [Resource]),
+      _Err
   end.
 
 delete_resource(LServer, Resource) ->
