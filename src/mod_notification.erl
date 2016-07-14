@@ -75,20 +75,20 @@ json_encode([{Key, Value} | R], "") ->
   case Key of
     "message" ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
-      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
+      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
     _ ->
       ?INFO_MSG("KEY ~s is array", [Key]),
-      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
+      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
   end;
 json_encode([{Key, Value} | R], Acc) ->
   ?INFO_MSG("Parsing KEY ~s", [Key]),
   case Key of
     "message" ->
       ?INFO_MSG("KEY ~s, Value ~s is binary", [Key, Value]),
-      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"");
+      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
     _ ->
       ?INFO_MSG("KEY ~s is array", [Key]),
-      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}")
+      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
   end.
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
