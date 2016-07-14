@@ -67,13 +67,13 @@ url_encode([{Key, Value} | R], Acc) ->
   url_encode(R, Acc ++ "&" ++ escape_uri(Key) ++ "=" ++ escape_uri(Value)).
 
 json_encode(Data) ->
-  url_encode(Data, "").
+  json_encode(Data, "").
 json_encode([], Acc) ->
   Acc;
 json_encode([{Key, Value} | R], "") ->
-  url_encode(R, escape_uri(Key) ++ ":" ++ escape_uri(Value));
+  json_encode(R, escape_uri(Key) ++ ":" ++ escape_uri(Value));
 json_encode([{Key, Value} | R], Acc) ->
-  url_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value)).
+  json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value)).
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
 
