@@ -82,6 +82,7 @@ json_encode([{Key, Value} | R], "") ->
 
 end;
 json_encode([{Key, Value} | R], Acc) ->
+  ?INFO_MSG("Previous result ~p", [Acc]),
   ?INFO_MSG("Parsing KEY ~s", [Key]),
   case Key of
     "message" ->
