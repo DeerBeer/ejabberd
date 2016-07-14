@@ -71,14 +71,18 @@ json_encode(Data) ->
 json_encode([], Acc) ->
   Acc;
 json_encode([{Key, Value} | R], "") ->
-  if
-    is_list(Value) -> json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
-    _ -> json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
+  case Value of
+    Value when is_list(Value) ->
+      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
+    _ ->
+      json_encode(R, "\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
   end;
 json_encode([{Key, Value} | R], Acc) ->
-  if
-    is_list(Value) -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
-    _ -> json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
+  case Value of
+    Value when is_list(Value) ->
+      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":{" ++ json_encode(Value) ++ "}");
+    _ ->
+      json_encode(R, Acc ++ ",\"" ++ escape_uri(Key) ++ "\":\"" ++ escape_uri(Value) ++ "\"")
   end.
 
 mod_opt_type(push_url) -> fun(B) when is_binary(B) -> B end.
